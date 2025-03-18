@@ -74,7 +74,7 @@ double false_positions(double(*function)(double),
         steps++;
     }
 
-    std::cout << "Number of iterations: " << steps << '\n';
+    std::cout << "Iterations: " << steps << '\n';
     return x0;
 
 }
@@ -110,13 +110,15 @@ double secant(double(*function)(double),
 
 int main()
 {
-    std::cout << "False positions method:" << "\n\n";
+    std::cout << "False positions method:" << "\n";
+    std::cout << "------------------------------------\n";
     double root_task1 = false_positions(fun1, 0.,1.);
     std::cout << std::setprecision(8);
     std::cout << root_task1 << '\n';
     std::cout << "------------------------------------\n\n";
 
-    std::cout << "Secant method:" << "\n\n";
+    std::cout << "Secant method:" << "\n";
+    std::cout << "------------------------------------\n";
     double root_task2 = secant(fun1, 0., 0.2);
     std::cout << std::setprecision(8);
     std::cout << root_task1 << '\n';
