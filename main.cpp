@@ -1,6 +1,9 @@
 #include <iomanip>
 #include <iostream>
 #include <cmath>
+#include <vector>
+
+using namespace std;
 
 //Helping functions
 
@@ -15,114 +18,127 @@ double power(double number, int powe)
     return ans;
 }
 
-double count_error(double x_left, double x_right)
-{
-    double ans = (x_right - x_left)/x_right;
-
-    if (ans < 0.) return -1.*ans;
-    else return ans;
-}
-
-double middle(double left, double right)
-{
-    return (left + right)/2.;
-}
-
 //Function for tasks
 
 double fun1(double x)
 {
-    return cos(x) - x;
+    return exp(x);
 }
 
+double fun2(double x)
+{
+    return 1./(1 + x * x);
+}
 
+double derr1(double x)
+{
+    return exp(x);
+}
+
+double derr2(double x)
+{
+    return - 2 * x / power((x * x + 1), 4);
+}
 //helping function for false_positon method
-
-void fp_step(double &x_left, double &x0, double &x_right,
-double(*function)(double))
+double count_l(vector<double>&x_array, unsigned int j, double x)
 {
-    x0 = (x_left * function(x_right) - x_right * function(x_left)) / (function(x_right) - function(x_left));
-    if (function(x_left) * function(x0) < 0)
+    double result = 1.;
+
+    for (unsigned int i = 0; i < j; i++)
     {
-        x_right = x0;
+        result *= (x-x_array[i]) / (x_array[j] - x_array[i]);
     }
 
-    else
+    for(unsigned int i = j + 1; i < x_array.size(); i ++)
     {
-        x_left = x0;
-    }
-}
-
-double false_positions(double(*function)(double),
-    double x_left, double x_right,
-    double tolerance = 1e-8)
-{
-    unsigned int steps = 1;
-    double error, x0, x_old;
-
-    fp_step(x_left, x0, x_right, function);
-    x_old = x0;
-
-    error = count_error(x_left, x_right);
-
-    while(tolerance < error)
-    {   
-        fp_step(x_left, x0, x_right, function);
-
-        error = count_error(x0, x_old);
-        x_old = x0;
-        steps++;
+        result *= (x-x_array[i]) / (x_array[j] - x_array[i]);
     }
 
-    std::cout << "Iterations: " << steps << '\n';
-    return x0;
-
+    return result;
 }
 
-
-//secant method
-
-double secant(double(*function)(double),
-    double x0, double x1, double tolerance = 1e-8)
+double count_l2(vector<double>&x_array, unsigned int j)
 {
-    double x_old = x0;
-    double x = x1;
-    double x_next, error;
+    double result = 0.;
 
-    unsigned int steps = 0;
-
-    do
+    for (unsigned int i = 0; i < j; i++)
     {
-        x_next = (x_old * function(x) - x * function(x_old)) / (function(x) - function(x_old));
-        steps++;
+        result += 1. / (x_array[j] - x_array[i]);
+    }
 
-        error = count_error(x, x_next);
-        
-        x_old = x;
-        x = x_next;
-        
-    } while (error > tolerance);
+    for(unsigned int i = j + 1; i < x_array.size(); i ++)
+    {
+        result += 1. / (x_array[j] - x_array[i]);
+    }
 
-    std::cout << "Iterations: " << steps << '\n';
-    return x;
+    return result;
+    
 }
 
+double count_h(vector<double>&x_array, unsigned int j, double x)
+{
+    return (1 - 2 * (x - x_array[j]) * count_l2(x_array, j)) * count_l(x_array, j, x);
+}
+
+double count_h2(vector<double>&x_array, unsigned int j, double x)
+{
+    return (x - x_array[j]) * power(count_l(x_array, j, x),2);
+}
+
+double lagange_interpolation(vector<double>&x_array, double x, double(*function)(double))
+{
+    double result = 0.;
+
+    for (unsigned int j = 0; j < x_array.size(); j++)
+    {
+        result += count_l(x_array, j, x) + function(x_array[j]);
+    }
+
+    return result;
+}
+
+double hermite_interpolation(vector<double>&x_array, double x, double(*function)(double), double(*derrivative)(double))
+{
+    double result = 0.;
+
+    for(unsigned int j = 0; j < x_array.size(); j ++)
+    {
+        result += count_h(x_array, j, x) * function(x_array[j]) + count_h2(x_array, j, x) * derrivative(x_array[j]);
+    }
+
+    return result;
+}
 
 int main()
 {
-    std::cout << "False positions method:" << "\n";
-    std::cout << "------------------------------------\n";
-    double root_task1 = false_positions(fun1, 0.,1.);
-    std::cout << std::setprecision(8);
-    std::cout << root_task1 << '\n';
-    std::cout << "------------------------------------\n\n";
+    vector<double> x;
 
-    std::cout << "Secant method:" << "\n";
-    std::cout << "------------------------------------\n";
-    double root_task2 = secant(fun1, 0., 0.2);
-    std::cout << std::setprecision(8);
-    std::cout << root_task1 << '\n';
-    std::cout << "------------------------------------\n\n";
+    for (double i = -5.; i < 5.1; i += 0.1)
+    {
+        x.push_back(i);
+    }
+
+    vector<double> inter1{-1., 0.5, 1.5, 2.};
+    vector<double> inter2;
+
+    for(int i = 0; i < 6.; i++)
+    {
+        inter2.push_back(i);
+    }
+
+    vector<double>result1l;
+    vector<double>result1h;
+    vector<double>result2l;
+    vector<double>result2h;
+
+    for (int i = 0; i < x.size(); i++)
+    {
+        result1l.push_back(lagange_interpolation(inter1, x[i], fun1));
+        result2l.push_back(lagange_interpolation(inter2, x[i], fun2));
+
+        result1h.push_back(hermite_interpolation(inter1, x[i], fun1, derr1));
+        result2h.push_back(hermite_interpolation(inter2, x[i], fun2, derr2));
+    }
 
     return 0;
 }
